@@ -2,7 +2,6 @@ package blackjack
 
 import (
 	"errors"
-	"fmt"
 
 	deck "github.com/iwita/go-exercises/deckOfCards"
 )
@@ -297,7 +296,7 @@ func endRound(g *Game, ai AI) {
 
 	// TODO figure out  winnings and add/substract them
 
-	fmt.Println(g.balance)
+	//fmt.Println(g.balance)
 	ai.Results(allHands, g.dealer)
 	g.player = nil
 	g.dealer = nil
