@@ -33,7 +33,7 @@ func main() {
 func handler(numStories int, tpl *template.Template) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		stories, err := getTopStories(numStories)
+		stories, err := getCachedStories(numStories)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -64,7 +64,6 @@ func getTopStories(numStories int) ([]item, error) {
 	if err != nil {
 		return nil, errors.New("Failed to load top stories")
 	}
-	//var stories []item
 	var stories []item
 	at := 0
 	for len(stories) < numStories {
@@ -77,10 +76,30 @@ func getTopStories(numStories int) ([]item, error) {
 	return stories[0:numStories], nil
 }
 
+var (
+	cache           []item
+	cacheExpiration time.Time
+)
+
+func getCachedStories(numStories int) ([]item, error) {
+
+	if time.Now().Sub(cacheExpiration) < 0 {
+		return cache, nil
+	}
+
+	stories, err := getTopStories(numStories)
+	if err != nil {
+		return nil, err
+	}
+	cache = stories
+	cacheExpiration = time.Now().Add(15 * time.Second)
+	return cache, nil
+}
+
 func getStories(ids []int) []item {
-	var client hn.Client
 	for idx := 0; idx < len(ids); idx++ {
 		go func(idx int) {
+			var client hn.Client
 			hnItem, err := client.GetItem(ids[idx])
 			if err != nil {
 				resultCh <- result{idx: idx, err: err}
