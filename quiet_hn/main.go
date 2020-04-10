@@ -65,7 +65,21 @@ func getTopStories(numStories int) ([]item, error) {
 		return nil, errors.New("Failed to load top stories")
 	}
 	//var stories []item
-	for idx := 0; idx < numStories; idx++ {
+	var stories []item
+	at := 0
+	for len(stories) < numStories {
+
+		need := (numStories - len(stories)) * 5 / 4
+		stories = append(stories, getStories(ids[at:at+need])...)
+		at += need
+	}
+	//stories = getStories(ids[0:numStories])
+	return stories[0:numStories], nil
+}
+
+func getStories(ids []int) []item {
+	var client hn.Client
+	for idx := 0; idx < len(ids); idx++ {
 		go func(idx int) {
 			hnItem, err := client.GetItem(ids[idx])
 			if err != nil {
@@ -75,7 +89,7 @@ func getTopStories(numStories int) ([]item, error) {
 		}(idx)
 	}
 	var results []result
-	for i := 0; i < numStories; i++ {
+	for i := 0; i < len(ids); i++ {
 		results = append(results, <-resultCh)
 	}
 	sort.Slice(results, func(i, j int) bool {
@@ -91,17 +105,8 @@ func getTopStories(numStories int) ([]item, error) {
 			stories = append(stories, res.item)
 		}
 	}
-	return stories, nil
+	return stories
 }
-
-// if isStoryLink(item) {
-// 	stories = append(stories, item)
-// 	if len(stories) >= numStories {
-// 		break
-// 	}
-// }
-// }
-// return stories, nil
 
 func isStoryLink(item item) bool {
 	return item.Type == "story" && item.URL != ""
